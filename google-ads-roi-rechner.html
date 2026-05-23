@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Google Ads ROI-Rechner</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:    #4285F4;
+      --green:   #34A853;
+      --yellow:  #FBBC05;
+      --red:     #EA4335;
+      --bg:      #f8f9fc;
+      --card:    #ffffff;
+      --border:  #e2e6ea;
+      --text:    #202124;
+      --muted:   #5f6368;
+      --radius:  12px;
+      --shadow:  0 2px 12px rgba(0,0,0,.08);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 36px;
+    }
+    .logo-dots {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .logo-dots span {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+    }
+    .logo-dots span:nth-child(1) { background: var(--blue);   }
+    .logo-dots span:nth-child(2) { background: var(--red);    }
+    .logo-dots span:nth-child(3) { background: var(--yellow); }
+    .logo-dots span:nth-child(4) { background: var(--green);  }
+    header h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: 6px; }
+    header p  { color: var(--muted); font-size: .95rem; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      max-width: 760px;
+      margin: 0 auto 28px;
+    }
+    .tab {
+      padding: 9px 22px;
+      border: 2px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: .88rem;
+      font-weight: 600;
+      background: var(--card);
+      color: var(--muted);
+      transition: .15s;
+    }
+    .tab.active {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+    .tab:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
+
+    /* ── Cards ── */
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .container.active { display: flex; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+    .card h2 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card h2 .icon {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+
+    /* ── Grid inputs ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+
+    .field label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 6px;
+    }
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap input {
+      width: 100%;
+      padding: 10px 36px 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: .95rem;
+      color: var(--text);
+      background: var(--bg);
+      transition: border-color .15s;
+      outline: none;
+    }
+    .input-wrap input:focus { border-color: var(--blue); background: #fff; }
+    .input-wrap .unit {
+      position: absolute;
+      right: 11px; top: 50%;
+      transform: translateY(-50%);
+      font-size: .8rem;
+      color: var(--muted);
+      pointer-events: none;
+      font-weight: 600;
+    }
+
+    /* ── Metrics row ── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 580px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 340px) { .metrics { grid-template-columns: 1fr; } }
+
+    .metric {
+      border-radius: 10px;
+      padding: 16px 14px;
+      text-align: center;
+    }
+    .metric .m-label {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 6px;
+      opacity: .75;
+    }
+    .metric .m-value {
+      font-size: 1.55rem;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .metric .m-name {
+      font-size: .75rem;
+      margin-top: 4px;
+      opacity: .7;
+    }
+    .metric.blue   { background: #e8f0fe; color: #1a73e8; }
+    .metric.green  { background: #e6f4ea; color: #188038; }
+    .metric.yellow { background: #fef9e0; color: #b06000; }
+    .metric.red    { background: #fce8e6; color: #c5221f; }
+
+    /* ── Results summary ── */
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 500px) { .results-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .result-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .result-item .r-label {
+      font-size: .75rem;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .result-item .r-value {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .result-item.positive .r-value { color: var(--green); }
+    .result-item.negative .r-value { color: var(--red);   }
+
+    /* ── ROAS bar ── */
+    .roas-bar-wrap { margin-top: 16px; }
+    .roas-bar-wrap .roas-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: .8rem;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .roas-bar-bg {
+      background: var(--border);
+      border-radius: 999px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .roas-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width .4s ease;
+      background: linear-gradient(90deg, var(--red) 0%, var(--yellow) 25%, var(--green) 50%);
+      background-size: 200% 100%;
+    }
+
+    /* ── Benchmark tooltip row ── */
+    .benchmarks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .benchmark {
+      font-size: .75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+      border: 1.5px solid;
+    }
+    .benchmark.good   { border-color: var(--green);  color: var(--green);  background: #e6f4ea; }
+    .benchmark.warn   { border-color: var(--yellow); color: #b06000;       background: #fef9e0; }
+    .benchmark.danger { border-color: var(--red);    color: var(--red);    background: #fce8e6; }
+
+    /* ── Formula pills ── */
+    .formulas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .formula-pill {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: .78rem;
+      color: var(--muted);
+    }
+    .formula-pill strong { color: var(--text); }
+
+    /* ── Reset button ── */
+    .btn-reset {
+      display: block;
+      width: 100%;
+      padding: 11px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: none;
+      cursor: pointer;
+      font-size: .88rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-top: 8px;
+      transition: .15s;
+    }
+    .btn-reset:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 24px 0 8px;
+      color: var(--muted);
+      font-size: .88rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-dots">
+    <span></span><span></span><span></span><span></span>
+  </div>
+  <h1>Google Ads ROI-Rechner</h1>
+  <p>CTR &middot; CPC &middot; CR &middot; ROAS &ndash; alle KPIs auf einen Blick</p>
+</header>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('analyse')">Kampagnen-Analyse</button>
+  <button class="tab"        onclick="switchTab('planung')">Budget-Planung</button>
+  <button class="tab"        onclick="switchTab('formeln')">Formeln &amp; Benchmarks</button>
+</div>
+
+<!-- ═══════════════ TAB 1: ANALYSE ═══════════════ -->
+<div class="container active" id="tab-analyse">
+
+  <!-- Eingaben -->
+  <div class="card">
+    <h2><span class="icon" style="background:#e8f0fe">📊</span> Kampagnendaten eingeben</h2>
+    <div class="grid">
+      <div class="field">
+        <label>Impressionen</label>
+        <div class="input-wrap">
+          <input type="number" id="impressionen" min="0" placeholder="z.B. 100000" oninput="berechne()" />
+          <span class="unit">Anz.</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Klicks</label>
+        <div class="input-wrap">
+          <input type="number" id="klicks" min="0" placeholder="z.B. 3500" oninput="berechne()" />
+          <span class="unit">Anz.</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Werbeausgaben</label>
+        <div class="input-wrap">
+          <input type="number" id="ausgaben" min="0" placeholder="z.B. 5000" oninput="berechne()" />
+          <span class="unit">€</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Conversions</label>
+        <div class="input-wrap">
+          <input type="number" id="conversions" min="0" placeholder="z.B. 175" oninput="berechne()" />
+          <span class="unit">Anz.</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Umsatz je Conversion</label>
+        <div class="input-wrap">
+          <input type="number" id="umsatzProConv" min="0" placeholder="z.B. 80" oninput="berechne()" />
+          <span class="unit">€</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Gesamtumsatz (optional)</label>
+        <div class="input-wrap">
+          <input type="number" id="gesamtumsatz" min="0" placeholder="überschreibt Einzelwert" oninput="berechne()" />
+          <span class="unit">€</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn-reset" onclick="resetAnalyse()">Felder zurücksetzen</button>
+  </div>
+
+  <!-- KPI Kacheln -->
+  <div class="card">
+    <h2><span class="icon" style="background:#e6f4ea">📈</span> Deine KPIs</h2>
+    <div class="metrics">
+      <div class="metric blue">
+        <div class="m-label">CTR</div>
+        <div class="m-value" id="out-ctr">–</div>
+        <div class="m-name">Click-Through-Rate</div>
+      </div>
+      <div class="metric yellow">
+        <div class="m-label">CPC</div>
+        <div class="m-value" id="out-cpc">–</div>
+        <div class="m-name">Cost per Click</div>
+      </div>
+      <div class="metric green">
+        <div class="m-label">CR</div>
+        <div class="m-value" id="out-cr">–</div>
+        <div class="m-name">Conversion Rate</div>
+      </div>
+      <div class="metric red">
+        <div class="m-label">ROAS</div>
+        <div class="m-value" id="out-roas">–</div>
+        <div class="m-name">Return on Ad Spend</div>
+      </div>
+    </div>
+
+    <div class="roas-bar-wrap" id="roas-bar-section" style="display:none">
+      <div class="roas-label">
+        <span>ROAS-Skala</span>
+        <span id="roas-bar-label"></span>
+      </div>
+      <div class="roas-bar-bg">
+        <div class="roas-bar-fill" id="roas-bar" style="width:0%"></div>
+      </div>
+      <div id="roas-bewertung" class="benchmarks" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- Weitere Ergebnisse -->
+  <div class="card">
+    <h2><span class="icon" style="background:#fce8e6">💰</span> Ergebnisübersicht</h2>
+    <div id="empty-msg" class="empty">Gib Kampagnendaten ein, um Ergebnisse zu sehen.</div>
+    <div class="results-grid" id="results-grid" style="display:none">
+      <div class="result-item">
+        <div class="r-label">Gesamtumsatz</div>
+        <div class="r-value" id="res-umsatz">–</div>
+      </div>
+      <div class="result-item">
+        <div class="r-label">Werbeausgaben</div>
+        <div class="r-value" id="res-ausgaben">–</div>
+      </div>
+      <div class="result-item positive" id="res-gewinn-wrap">
+        <div class="r-label">Gewinn / Verlust</div>
+        <div class="r-value" id="res-gewinn">–</div>
+      </div>
+      <div class="result-item">
+        <div class="r-label">ROI</div>
+        <div class="r-value" id="res-roi">–</div>
+      </div>
+      <div class="result-item">
+        <div class="r-label">Kosten / Conversion</div>
+        <div class="r-value" id="res-cpa">–</div>
+      </div>
+      <div class="result-item">
+        <div class="r-label">Gewinn / Conversion</div>
+        <div class="r-value" id="res-gpc">–</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB 2: PLANUNG ═══════════════ -->
+<div class="container" id="tab-planung">
+
+  <div class="card">
+    <h2><span class="icon" style="background:#e8f0fe">🎯</span> Budget &amp; Zielwerte</h2>
+    <div class="grid">
+      <div class="field">
+        <label>Werbebudget</label>
+        <div class="input-wrap">
+          <input type="number" id="p-budget" min="0" placeholder="z.B. 10000" oninput="plane()" />
+          <span class="unit">€</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Ziel-CTR</label>
+        <div class="input-wrap">
+          <input type="number" id="p-ctr" min="0" max="100" step="0.01" placeholder="z.B. 3.5" oninput="plane()" />
+          <span class="unit">%</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Ziel-CPC</label>
+        <div class="input-wrap">
+          <input type="number" id="p-cpc" min="0" step="0.01" placeholder="z.B. 1.43" oninput="plane()" />
+          <span class="unit">€</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Ziel-CR</label>
+        <div class="input-wrap">
+          <input type="number" id="p-cr" min="0" max="100" step="0.01" placeholder="z.B. 5" oninput="plane()" />
+          <span class="unit">%</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Umsatz je Conversion</label>
+        <div class="input-wrap">
+          <input type="number" id="p-umsatz" min="0" step="0.01" placeholder="z.B. 80" oninput="plane()" />
+          <span class="unit">€</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Impressionen (geschätzt)</label>
+        <div class="input-wrap">
+          <input type="number" id="p-impr" min="0" placeholder="z.B. 200000" oninput="plane()" />
+          <span class="unit">Anz.</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn-reset" onclick="resetPlanung()">Felder zurücksetzen</button>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon" style="background:#e6f4ea">🔮</span> Prognose</h2>
+    <div id="plan-empty" class="empty">Gib Budget und Zielwerte ein.</div>
+    <div id="plan-results" style="display:none">
+      <div class="metrics" style="margin-bottom:16px">
+        <div class="metric blue">
+          <div class="m-label">CTR</div>
+          <div class="m-value" id="p-out-ctr">–</div>
+          <div class="m-name">Click-Through-Rate</div>
+        </div>
+        <div class="metric yellow">
+          <div class="m-label">CPC</div>
+          <div class="m-value" id="p-out-cpc">–</div>
+          <div class="m-name">Cost per Click</div>
+        </div>
+        <div class="metric green">
+          <div class="m-label">CR</div>
+          <div class="m-value" id="p-out-cr">–</div>
+          <div class="m-name">Conversion Rate</div>
+        </div>
+        <div class="metric red">
+          <div class="m-label">ROAS</div>
+          <div class="m-value" id="p-out-roas">–</div>
+          <div class="m-name">Return on Ad Spend</div>
+        </div>
+      </div>
+      <div class="results-grid">
+        <div class="result-item">
+          <div class="r-label">Erwartete Klicks</div>
+          <div class="r-value" id="p-res-klicks">–</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label">Erwartete Conversions</div>
+          <div class="r-value" id="p-res-conv">–</div>
+        </div>
+        <div class="result-item positive">
+          <div class="r-label">Erwarteter Umsatz</div>
+          <div class="r-value" id="p-res-umsatz">–</div>
+        </div>
+        <div class="result-item" id="p-res-gewinn-wrap">
+          <div class="r-label">Erwarteter Gewinn</div>
+          <div class="r-value" id="p-res-gewinn">–</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label">ROI</div>
+          <div class="r-value" id="p-res-roi">–</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label">Kosten / Conversion</div>
+          <div class="r-value" id="p-res-cpa">–</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB 3: FORMELN ═══════════════ -->
+<div class="container" id="tab-formeln">
+  <div class="card">
+    <h2><span class="icon" style="background:#fef9e0">📐</span> Formeln</h2>
+    <div class="formulas">
+      <div class="formula-pill"><strong>CTR</strong> = Klicks ÷ Impressionen × 100 %</div>
+      <div class="formula-pill"><strong>CPC</strong> = Werbeausgaben ÷ Klicks</div>
+      <div class="formula-pill"><strong>CR</strong> = Conversions ÷ Klicks × 100 %</div>
+      <div class="formula-pill"><strong>ROAS</strong> = Umsatz ÷ Werbeausgaben</div>
+      <div class="formula-pill"><strong>ROI</strong> = (Umsatz − Ausgaben) ÷ Ausgaben × 100 %</div>
+      <div class="formula-pill"><strong>CPA</strong> = Ausgaben ÷ Conversions</div>
+      <div class="formula-pill"><strong>Klicks</strong> = Budget ÷ CPC</div>
+      <div class="formula-pill"><strong>Conversions</strong> = Klicks × CR</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon" style="background:#e6f4ea">📊</span> Branchen-Benchmarks (Google Ads, Ø)</h2>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border)">
+            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:700">Metrik</th>
+            <th style="padding:8px 10px;color:var(--muted);font-weight:700">Gut</th>
+            <th style="padding:8px 10px;color:var(--muted);font-weight:700">Okay</th>
+            <th style="padding:8px 10px;color:var(--muted);font-weight:700">Optimieren</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px;font-weight:600">CTR (Search)</td>
+            <td style="padding:10px;text-align:center;color:var(--green);font-weight:700">&gt; 5 %</td>
+            <td style="padding:10px;text-align:center;color:#b06000;font-weight:700">2 – 5 %</td>
+            <td style="padding:10px;text-align:center;color:var(--red);font-weight:700">&lt; 2 %</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px;font-weight:600">CR (E-Commerce)</td>
+            <td style="padding:10px;text-align:center;color:var(--green);font-weight:700">&gt; 4 %</td>
+            <td style="padding:10px;text-align:center;color:#b06000;font-weight:700">2 – 4 %</td>
+            <td style="padding:10px;text-align:center;color:var(--red);font-weight:700">&lt; 2 %</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px;font-weight:600">ROAS</td>
+            <td style="padding:10px;text-align:center;color:var(--green);font-weight:700">&gt; 4×</td>
+            <td style="padding:10px;text-align:center;color:#b06000;font-weight:700">2 – 4×</td>
+            <td style="padding:10px;text-align:center;color:var(--red);font-weight:700">&lt; 2×</td>
+          </tr>
+          <tr>
+            <td style="padding:10px;font-weight:600">ROI</td>
+            <td style="padding:10px;text-align:center;color:var(--green);font-weight:700">&gt; 300 %</td>
+            <td style="padding:10px;text-align:center;color:#b06000;font-weight:700">100 – 300 %</td>
+            <td style="padding:10px;text-align:center;color:var(--red);font-weight:700">&lt; 100 %</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon" style="background:#fce8e6">💡</span> Quick-Tipps</h2>
+    <ul style="list-style:none;display:flex;flex-direction:column;gap:10px">
+      <li style="display:flex;gap:10px;align-items:flex-start;font-size:.88rem">
+        <span style="color:var(--blue);font-weight:700;min-width:14px">→</span>
+        <span><strong>CTR erhöhen:</strong> Anzeigentexte testen (A/B), Anzeigenerweiterungen nutzen, irrelevante Keywords ausschließen.</span>
+      </li>
+      <li style="display:flex;gap:10px;align-items:flex-start;font-size:.88rem">
+        <span style="color:var(--green);font-weight:700;min-width:14px">→</span>
+        <span><strong>CPC senken:</strong> Qualitätsfaktor verbessern, Long-Tail-Keywords verwenden, Gebotsstrategie optimieren.</span>
+      </li>
+      <li style="display:flex;gap:10px;align-items:flex-start;font-size:.88rem">
+        <span style="color:var(--yellow);font-weight:700;min-width:14px">→</span>
+        <span><strong>CR steigern:</strong> Landing-Pages optimieren, klare CTAs setzen, Ladezeiten reduzieren.</span>
+      </li>
+      <li style="display:flex;gap:10px;align-items:flex-start;font-size:.88rem">
+        <span style="color:var(--red);font-weight:700;min-width:14px">→</span>
+        <span><strong>ROAS maximieren:</strong> Budget auf Top-Performer verschieben, Ziel-ROAS-Strategie in Google Ads aktivieren.</span>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  /* ── Tab-Switcher ── */
+  function switchTab(name) {
+    document.querySelectorAll('.container').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  /* ── Formatierung ── */
+  const fmt  = (n, dec=2) => isNaN(n) || !isFinite(n) ? '–' : n.toLocaleString('de-DE', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+  const fmtE = (n, dec=2) => isNaN(n) || !isFinite(n) ? '–' : fmt(n, dec) + ' €';
+  const fmtP = (n, dec=2) => isNaN(n) || !isFinite(n) ? '–' : fmt(n, dec) + ' %';
+  const fmtX = (n, dec=2) => isNaN(n) || !isFinite(n) ? '–' : fmt(n, dec) + '×';
+  const fmtN = (n)        => isNaN(n) || !isFinite(n) ? '–' : Math.round(n).toLocaleString('de-DE');
+
+  /* ══════════════════════════════════════════════
+     TAB 1 – ANALYSE
+  ══════════════════════════════════════════════ */
+  function berechne() {
+    const impr  = parseFloat(document.getElementById('impressionen').value)    || 0;
+    const klick = parseFloat(document.getElementById('klicks').value)           || 0;
+    const ausg  = parseFloat(document.getElementById('ausgaben').value)         || 0;
+    const conv  = parseFloat(document.getElementById('conversions').value)      || 0;
+    const upC   = parseFloat(document.getElementById('umsatzProConv').value)    || 0;
+    const gU    = parseFloat(document.getElementById('gesamtumsatz').value)     || 0;
+
+    const hasData = impr > 0 || klick > 0 || ausg > 0 || conv > 0;
+
+    const ctr  = impr  > 0 && klick > 0 ? (klick / impr)  * 100 : NaN;
+    const cpc  = klick > 0 && ausg  > 0 ? ausg  / klick          : NaN;
+    const cr   = klick > 0 && conv  > 0 ? (conv  / klick) * 100  : NaN;
+
+    const umsatz = gU > 0 ? gU : (conv > 0 && upC > 0 ? conv * upC : NaN);
+    const roas   = ausg > 0 && !isNaN(umsatz) ? umsatz / ausg : NaN;
+    const roi    = ausg > 0 && !isNaN(umsatz) ? (umsatz - ausg) / ausg * 100 : NaN;
+    const gewinn = !isNaN(umsatz) ? umsatz - ausg : NaN;
+    const cpa    = conv > 0 && ausg > 0 ? ausg / conv : NaN;
+    const gpc    = conv > 0 && !isNaN(gewinn) ? gewinn / conv : NaN;
+
+    // KPI-Kacheln
+    document.getElementById('out-ctr').textContent  = isNaN(ctr)  ? '–' : fmtP(ctr,  2);
+    document.getElementById('out-cpc').textContent  = isNaN(cpc)  ? '–' : fmtE(cpc,  2);
+    document.getElementById('out-cr').textContent   = isNaN(cr)   ? '–' : fmtP(cr,   2);
+    document.getElementById('out-roas').textContent = isNaN(roas) ? '–' : fmtX(roas, 2);
+
+    // ROAS-Bar
+    if (!isNaN(roas)) {
+      const pct = Math.min(roas / 6 * 100, 100);
+      document.getElementById('roas-bar').style.width = pct + '%';
+      document.getElementById('roas-bar-label').textContent = fmtX(roas);
+      document.getElementById('roas-bar-section').style.display = 'block';
+
+      const badge = roas >= 4 ? 'good' : roas >= 2 ? 'warn' : 'danger';
+      const text  = roas >= 4 ? '✓ Sehr guter ROAS' : roas >= 2 ? '⚠ ROAS okay – optimierbar' : '✗ ROAS zu niedrig';
+      document.getElementById('roas-bewertung').innerHTML =
+        `<span class="benchmark ${badge}">${text}</span>`;
+    } else {
+      document.getElementById('roas-bar-section').style.display = 'none';
+    }
+
+    // Ergebnisübersicht
+    const showResults = hasData && (!isNaN(umsatz) || ausg > 0);
+    document.getElementById('empty-msg').style.display    = showResults ? 'none'  : 'block';
+    document.getElementById('results-grid').style.display = showResults ? 'grid'  : 'none';
+
+    if (showResults) {
+      document.getElementById('res-umsatz').textContent  = fmtE(umsatz);
+      document.getElementById('res-ausgaben').textContent= fmtE(ausg);
+      document.getElementById('res-roi').textContent     = isNaN(roi) ? '–' : fmtP(roi);
+      document.getElementById('res-cpa').textContent     = fmtE(cpa);
+      document.getElementById('res-gpc').textContent     = fmtE(gpc);
+
+      const gEl = document.getElementById('res-gewinn');
+      const gW  = document.getElementById('res-gewinn-wrap');
+      gEl.textContent = isNaN(gewinn) ? '–' : (gewinn >= 0 ? '+' : '') + fmtE(gewinn);
+      gW.className = 'result-item ' + (gewinn >= 0 ? 'positive' : 'negative');
+    }
+  }
+
+  function resetAnalyse() {
+    ['impressionen','klicks','ausgaben','conversions','umsatzProConv','gesamtumsatz']
+      .forEach(id => document.getElementById(id).value = '');
+    berechne();
+  }
+
+  /* ══════════════════════════════════════════════
+     TAB 2 – PLANUNG
+  ══════════════════════════════════════════════ */
+  function plane() {
+    const budget = parseFloat(document.getElementById('p-budget').value) || 0;
+    const ctr    = parseFloat(document.getElementById('p-ctr').value)    || 0;  // %
+    const cpc    = parseFloat(document.getElementById('p-cpc').value)    || 0;
+    const cr     = parseFloat(document.getElementById('p-cr').value)     || 0;  // %
+    const upC    = parseFloat(document.getElementById('p-umsatz').value) || 0;
+    const impr   = parseFloat(document.getElementById('p-impr').value)   || 0;
+
+    const hasInput = budget > 0 || cpc > 0 || cr > 0 || upC > 0;
+
+    // Klicks: aus Budget/CPC oder aus Impressionen/CTR
+    let klicks = NaN;
+    if (budget > 0 && cpc > 0) {
+      klicks = budget / cpc;
+    } else if (impr > 0 && ctr > 0) {
+      klicks = impr * (ctr / 100);
+    }
+
+    const conv    = !isNaN(klicks) && cr > 0 ? klicks * (cr / 100) : NaN;
+    const umsatz  = !isNaN(conv)   && upC > 0 ? conv * upC           : NaN;
+    const roas    = budget > 0 && !isNaN(umsatz) ? umsatz / budget   : NaN;
+    const roi     = budget > 0 && !isNaN(umsatz) ? (umsatz - budget) / budget * 100 : NaN;
+    const gewinn  = !isNaN(umsatz) ? umsatz - budget : NaN;
+    const cpa     = !isNaN(conv)   && conv > 0 && budget > 0 ? budget / conv : NaN;
+
+    document.getElementById('plan-empty').style.display   = hasInput ? 'none'  : 'block';
+    document.getElementById('plan-results').style.display = hasInput ? 'block' : 'none';
+
+    if (hasInput) {
+      document.getElementById('p-out-ctr').textContent  = ctr  > 0 ? fmtP(ctr,  2) : '–';
+      document.getElementById('p-out-cpc').textContent  = cpc  > 0 ? fmtE(cpc,  2) : '–';
+      document.getElementById('p-out-cr').textContent   = cr   > 0 ? fmtP(cr,   2) : '–';
+      document.getElementById('p-out-roas').textContent = isNaN(roas) ? '–' : fmtX(roas, 2);
+
+      document.getElementById('p-res-klicks').textContent = isNaN(klicks) ? '–' : fmtN(klicks);
+      document.getElementById('p-res-conv').textContent   = isNaN(conv)   ? '–' : fmtN(conv);
+      document.getElementById('p-res-umsatz').textContent = fmtE(umsatz);
+      document.getElementById('p-res-roi').textContent    = isNaN(roi) ? '–' : fmtP(roi);
+      document.getElementById('p-res-cpa').textContent    = fmtE(cpa);
+
+      const gEl = document.getElementById('p-res-gewinn');
+      const gW  = document.getElementById('p-res-gewinn-wrap');
+      gEl.textContent = isNaN(gewinn) ? '–' : (gewinn >= 0 ? '+' : '') + fmtE(gewinn);
+      gW.className = 'result-item ' + (gewinn >= 0 ? 'positive' : 'negative');
+    }
+  }
+
+  function resetPlanung() {
+    ['p-budget','p-ctr','p-cpc','p-cr','p-umsatz','p-impr']
+      .forEach(id => document.getElementById(id).value = '');
+    plane();
+  }
+</script>
+</body>
+</html>
